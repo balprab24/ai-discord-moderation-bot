@@ -1,0 +1,6 @@
+aiohttp>=3.9
+aiosqlite>=0.19
+discord.py>=2.3
+python-dotenv>=1.0
+torch>=2.0
+
