@@ -51,10 +51,7 @@ def create_bot(
 
     @bot.event
     async def on_message(message: "discord.Message") -> None:
-        if message.author.bot:
-            return
-        if not settings.is_guild_allowed(_guild_id(message)):
-            logger.info("Ignoring message from unallowed guild_id=%s", _guild_id(message))
+        if should_ignore_message(message, settings):
             return
 
         context = ModerationContext.from_discord_message(message)
@@ -303,6 +300,30 @@ def is_attachment_too_large(attachment: object, settings: Settings) -> bool:
     except (TypeError, ValueError):
         return False
     return size_bytes > settings.max_attachment_bytes
+
+
+def is_mod_log_channel(message: object, settings: Settings) -> bool:
+    if settings.mod_log_channel_id is None:
+        return False
+    channel = getattr(message, "channel", None)
+    channel_id = getattr(channel, "id", None)
+    try:
+        return int(channel_id) == settings.mod_log_channel_id
+    except (TypeError, ValueError):
+        return False
+
+
+def should_ignore_message(message: object, settings: Settings) -> bool:
+    author = getattr(message, "author", None)
+    if bool(getattr(author, "bot", False)):
+        return True
+    if is_mod_log_channel(message, settings):
+        return True
+    guild_id = _guild_id(message)
+    if not settings.is_guild_allowed(guild_id):
+        logger.info("Ignoring message from unallowed guild_id=%s", guild_id)
+        return True
+    return False
 
 
 def _image_attachments(attachments: Iterable["discord.Attachment"]):

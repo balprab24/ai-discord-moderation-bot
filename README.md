@@ -1,133 +1,141 @@
 # AI Discord Moderation Bot
 
-An event-driven Discord moderation bot built with Python, `discord.py`, PyTorch-ready image classification, async rate limiting, and SQLite audit logs.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Discord.py](https://img.shields.io/badge/Discord.py-2.x-5865F2)
+![Tests](https://img.shields.io/badge/Tests-pytest-green)
+![Mode](https://img.shields.io/badge/Default-review%20mode-orange)
+![Secrets](https://img.shields.io/badge/Secrets-.env%20ignored-red)
 
-This repo is set up for two uses:
+Portfolio-ready Discord moderation bot with async message handling, review-first alerts, PyTorch-ready image screening, and SQLite audit logs.
 
-- Show the project safely with an offline demo.
-- Run the bot in a real Discord server using local environment variables.
+```text
+Discord Server
+    |
+    v
+discord.py event listener
+    |
+    v
+ModerationService ----> Text rules
+    |                  Image classifier hook
+    v
+SQLite audit log ----> Private moderator alerts
+```
 
-No real tokens, server IDs, channel IDs, message contents, or private values belong in this README.
+## What This Does
 
-## Start Here
+- Watches Discord messages and image attachments in real time.
+- Scores text using fast local moderation rules.
+- Supports a PyTorch image-classifier hook without requiring model weights.
+- Records moderation decisions in SQLite.
+- Sends moderator alerts in `review` mode without deleting messages.
+- Keeps raw message text, image bytes, tokens, and private IDs out of the repo.
 
-Use this like a checklist.
+## Safe Demo
 
-- [ ] Create a virtual environment.
-- [ ] Install dependencies.
-- [ ] Run the offline demo.
-- [ ] Run the setup checker.
-- [ ] Configure your local `.env` file.
-- [ ] Invite the bot to your Discord server.
-- [ ] Start in `review` mode.
-- [ ] Watch moderator alerts before enabling enforcement.
-
-## Local Setup
+Run everything locally without Discord credentials:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements-dev.txt
-```
-
-Run the offline demo:
-
-```bash
 python3 -m src.demo
-```
-
-Run the setup checker:
-
-```bash
-python3 -m src.check_setup
-```
-
-Run tests:
-
-```bash
 python3 -m pytest
 ```
 
-## Live Discord Checklist
+Expected demo behavior:
 
-- [ ] Create a Discord application and bot in the Discord Developer Portal.
-- [ ] Enable the Message Content Intent for the bot.
-- [ ] Invite the bot with these permissions:
-  - View Channels
-  - Send Messages
-  - Read Message History
-  - Manage Messages
-  - Add Reactions
+| Scenario | Result |
+| --- | --- |
+| Normal message | Allowed |
+| Spam/scam text | Flagged or marked for delete |
+| Demo-safe image marker | Allowed |
+| Demo-NSFW image marker | Marked for review/delete |
+
+## Run Live
+
+Use this checklist when connecting the bot to your own Discord server:
+
+- [ ] Create a Discord bot application.
+- [ ] Enable Message Content Intent for that bot.
+- [ ] Invite the bot with View Channels, Send Messages, Read Message History, Manage Messages, and Add Reactions.
 - [ ] Copy `.env.example` to `.env`.
-- [ ] Put your real bot token only in `.env`.
+- [ ] Put all private values only in `.env`.
 - [ ] Create a private moderator log channel.
-- [ ] Put the moderator channel ID only in `.env`.
-- [ ] Optionally restrict the bot to your server ID in `.env`.
-- [ ] Run the setup checker again.
+- [ ] Start with `MODERATION_MODE=review`.
+- [ ] Run the setup checker.
 - [ ] Start the bot.
 
 ```bash
+python3 -m src.check_setup
 python3 -m src.bot
 ```
 
-## First Run Mode
-
-Start with:
+In Discord:
 
 ```text
-MODERATION_MODE=review
+!ping
+!status
+!audit
 ```
 
-In `review` mode, the bot keeps suspicious messages visible and sends moderator alerts. This lets you tune rules before allowing message deletion.
+## Moderation Modes
 
-Available modes:
+| Mode | What happens |
+| --- | --- |
+| `log_only` | Audit events are recorded only. |
+| `review` | Suspicious messages stay visible and private moderator alerts are sent. |
+| `enforce` | High-confidence text violations can be deleted and reported. |
 
-| Mode       | Behavior                                                        |
-| ---------- | --------------------------------------------------------------- |
-| `log_only` | Records audit events only. No alerts or message actions.        |
-| `review`   | Sends moderator alerts. Does not delete messages.               |
-| `enforce`  | Deletes high-confidence text violations and reports the action. |
+Image deletion remains disabled unless a real model is loaded and image enforcement is explicitly enabled.
 
-Image enforcement stays disabled unless a real model is configured and image enforcement is explicitly enabled.
+Messages inside the configured moderator log channel are ignored, so alerts do not create alert loops or clutter the audit log.
 
-## Bot Commands
-
-Use these in Discord after the bot is running:
-
-| Command   | Who should use it | What it does                                                 |
-| --------- | ----------------- | ------------------------------------------------------------ |
-| `!ping`   | Anyone            | Confirms the bot is online.                                  |
-| `!status` | Moderators        | Shows safe runtime status without secrets.                   |
-| `!audit`  | Moderators        | Shows recent moderation actions without raw message content. |
-
-## Privacy Rules
+## Privacy And Security
 
 - Never commit `.env`.
-- Never paste your bot token into code, docs, screenshots, issues, commits, or chat.
-- Never put real server IDs or private channel IDs in this README.
+- Never put real tokens, server IDs, channel IDs, screenshots with private data, or message contents in GitHub.
 - Keep private values in your local `.env` only.
-- Audit logs store IDs, action, score, reason, and timestamps.
-- Audit logs do not store raw message text or image bytes.
-- Moderator alerts do not repeat the original message content.
-- `python3 -m src.check_setup` reports whether secret values are configured without printing them.
+- `.env.example` contains placeholders only.
+- Audit logs store metadata and decisions, not raw message text or image bytes.
+- Moderator alerts include IDs and reasons, not the original message body.
+- `python3 -m src.check_setup` reports whether config exists without printing secret values.
 
-## Safe Configuration Reference
+## GitHub Safety Checklist
 
-Use `.env.example` as the template. The values below describe what each setting does; they are not real private values.
+Before pushing:
 
-| Setting                    | Purpose                                               |
-| -------------------------- | ----------------------------------------------------- |
-| `DISCORD_TOKEN`            | Your local bot token. Keep it private.                |
-| `DATABASE_URL`             | Local SQLite audit database location.                 |
-| `NSFW_MODEL_PATH`          | Optional local PyTorch model path.                    |
-| `MODERATION_THRESHOLD`     | Score needed for a high-confidence decision.          |
-| `MODERATION_MODE`          | `log_only`, `review`, or `enforce`.                   |
-| `MOD_LOG_CHANNEL_ID`       | Private moderator alert channel. Keep it local.       |
-| `ALLOWED_GUILD_IDS`        | Optional server allowlist. Keep it local.             |
-| `MAX_ATTACHMENT_BYTES`     | Maximum image size the bot will read.                 |
+```bash
+git status --short
+git diff --cached --name-only
+git check-ignore -v .env .venv/pyvenv.cfg moderation.db demo_moderation.db .pytest_cache/README.md
+```
+
+These must never be committed:
+
+- `.env`
+- `.venv/`
+- `*.db`
+- `.pytest_cache/`
+- `model_weights/`
+- Any file containing real tokens or private IDs
+
+## Configuration Reference
+
+Use `.env.example` as the template. Do not put real values in this README.
+
+| Setting | Purpose |
+| --- | --- |
+| `DISCORD_TOKEN` | Local Discord bot token. Keep private. |
+| `DATABASE_URL` | Local SQLite audit database location. |
+| `NSFW_MODEL_PATH` | Optional local PyTorch model path. |
+| `MODERATION_THRESHOLD` | Score needed for high-confidence moderation. |
+| `MODERATION_MODE` | `log_only`, `review`, or `enforce`. |
+| `MOD_LOG_CHANNEL_ID` | Private moderator alert channel. Keep local. |
+| `ALLOWED_GUILD_IDS` | Optional server allowlist. Keep local. |
+| `MAX_ATTACHMENT_BYTES` | Maximum image size the bot reads. |
 | `ENABLE_IMAGE_ENFORCEMENT` | Enables image deletion only with a real loaded model. |
-| `MAX_CONCURRENT_TASKS`     | Concurrent moderation tasks allowed.                  |
-| `MIN_API_INTERVAL_SECONDS` | Minimum gap between moderation task starts.           |
+| `MAX_CONCURRENT_TASKS` | Concurrent moderation tasks allowed. |
+| `MIN_API_INTERVAL_SECONDS` | Minimum gap between moderation task starts. |
 
 ## Project Map
 
@@ -145,3 +153,12 @@ src/
 tests/
   test_*.py           unit, async, demo, and safety tests
 ```
+
+## Resume Mapping
+
+- Event-driven Discord moderation: `src/bot.py`
+- Real-time image classification hook: `src/image_classifier.py`
+- Async handling and rate limiting: `src/rate_limiter.py`
+- Audit logging and false-positive review: `src/audit.py`
+- Offline demo for safe walkthroughs: `src/demo.py`
+

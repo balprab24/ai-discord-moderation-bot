@@ -4,11 +4,13 @@ from src.bot import (
     LIVE_REPORT,
     _apply_live_action,
     format_moderator_alert,
+    is_mod_log_channel,
     is_attachment_too_large,
     live_action_for_decision,
     missing_permissions,
     oversized_attachment_decision,
     safe_database_label,
+    should_ignore_message,
 )
 from src.config import Settings
 from src.models import ALLOW, DELETE, FLAG, ModerationContext, ModerationDecision
@@ -100,6 +102,37 @@ def test_alert_and_status_helpers_do_not_include_message_content_or_local_path()
     assert safe_database_label("/Users/example/private/moderation.db") == "<local>/moderation.db"
 
 
+def test_mod_log_channel_is_ignored_when_configured():
+    settings = Settings(mod_log_channel_id=333)
+    message = FakeMessage(content="free nitro giveaway winner click this link")
+
+    assert is_mod_log_channel(message, settings)
+    assert should_ignore_message(message, settings)
+
+
+def test_normal_channel_is_not_ignored_when_mod_log_is_configured():
+    settings = Settings(mod_log_channel_id=999)
+    message = FakeMessage(content="free nitro giveaway winner click this link")
+
+    assert not is_mod_log_channel(message, settings)
+    assert not should_ignore_message(message, settings)
+
+
+def test_bot_author_message_is_ignored():
+    settings = Settings(mod_log_channel_id=999)
+    message = FakeMessage()
+    message.author.bot = True
+
+    assert should_ignore_message(message, settings)
+
+
+def test_unallowed_guild_message_is_ignored():
+    settings = Settings(allowed_guild_ids=(999,))
+    message = FakeMessage()
+
+    assert should_ignore_message(message, settings)
+
+
 @pytest.mark.asyncio
 async def test_apply_review_action_sends_private_mod_alert_without_mutating_message():
     channel = FakeChannel()
@@ -184,4 +217,3 @@ class FakeMessage:
 
     async def add_reaction(self, reaction):
         self.reactions.append(reaction)
-
