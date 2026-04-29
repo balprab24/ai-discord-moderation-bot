@@ -153,12 +153,3 @@ src/
 tests/
   test_*.py           unit, async, demo, and safety tests
 ```
-
-## Resume Mapping
-
-- Event-driven Discord moderation: `src/bot.py`
-- Real-time image classification hook: `src/image_classifier.py`
-- Async handling and rate limiting: `src/rate_limiter.py`
-- Audit logging and false-positive review: `src/audit.py`
-- Offline demo for safe walkthroughs: `src/demo.py`
-
